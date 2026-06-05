@@ -9,8 +9,12 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up Python
         uses: actions/setup-python@v5
         with: {python-version: '3.12'}
@@ -22,6 +26,13 @@ jobs:
         run: |
           export MLFLOW_ALLOW_FILE_STORE=true
           mlflow run MLProject --env-manager=local
+      - name: Save Training Artifacts to Repository
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add mlruns/ || echo "mlruns not created"
+          git commit -m "chore: save training artifacts to repository" || echo "No changes to commit"
+          git push || echo "Push failed"
       - name: Build Docker Model
         run: |
           RUN_ID=$(ls -td mlruns/0/*/ | head -n 1 | cut -d'/' -f3)
